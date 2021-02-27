@@ -88,7 +88,7 @@ class Options:
         self.upper_call_delta = 0.3
         self.lower_call_delta = 0.2
         self.gamma_value = 0.1  # I tested this to be accurate
-        self.vega_value = 0.1  # I tested this to be accurate
+        self.vega_value = 0.2  # I tested this to be accurate
 
     # this is what gives you the strike based on your sentiment, these are just my values
     def sentiment(self):  # upper means "upper range of risk", lower means the opposite
