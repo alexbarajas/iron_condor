@@ -8,8 +8,12 @@ date_today = str(now).split()[0]
 
 # get this upcoming friday
 days_until_friday = timedelta((4 - now.weekday()) % 7)
-duf = str(days_until_friday)[0]  # to make the code a bit simpler
-friday_date = now + days_until_friday
+if str(days_until_friday)[0] == 0:
+    duf = 7  # to make the code a bit simpler
+    friday_date = now + timedelta(7)
+else:
+    duf = str(days_until_friday)[0]  # to make the code a bit simpler
+    friday_date = now + days_until_friday
 friday = str(friday_date).split()[0]
 
 TICKER = input("What stock ticker would you like to use?: ").upper()  # can use this
@@ -141,10 +145,10 @@ class Options:
                     else:
                         pass
         if put_strike and call_strike:  # add the call_strike here
-            print(f"The strike price for the short put is: {put_strike}")
+            print(f"\nThe strike price for the short put is: {put_strike}")
             print(f"The strike price for the short call is: {call_strike}")
         else:
-            print(f"Not recommended to execute an iron condor for {TICKER} expiring on {friday}.")
+            print(f"\nNot recommended to execute an iron condor for {TICKER} expiring on {friday}.")
 
 
     # gets the short put strike price
