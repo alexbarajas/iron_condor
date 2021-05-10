@@ -171,3 +171,17 @@ class Options:
 
 # starts the main portion of the program
 start()
+
+
+
+# Options Greeks:
+        # the rate of change between
+    # Delta: ... the option's price and a $1 change in the underlying stock price
+    # Theta: ... the option price and time
+    # Gamma: ... an option's delta and the underlying asset's price
+    # Vega: ... an option's value and the underlying asset's implied volatility
+    # Rho: ... an option's value and a 1% change in the interest rate
+
+
+
+
