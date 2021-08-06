@@ -16,43 +16,48 @@ else:
     friday_date = now + days_until_friday
 friday = str(friday_date).split()[0]
 
-TICKER = input("What stock ticker would you like to use?: ").upper()  # can use this
-# TICKER = "AAPL".upper()  # or this if you want to test the code
 
-# from TD Ameritrade
-CONSUMER_KEY = "YOUR OWN KEY HERE"  # not used for this API, but can be used for other Ameritrade APIs
-API_KEY = "YOUR OWN API KEY"
-endpoint = "https://api.tdameritrade.com/v1/marketdata/chains"  # the endpoint for this specific program
-my_url = f"{endpoint}?apikey={API_KEY}&symbol={TICKER}"
-TDA_LINK = f"https://auth.tdameritrade.com/auth?response_type=code&redirect_uri=http://localhost&client_id" \
-           f"={API_KEY}%40AMER.OAUTHAP "
+class SetUp:
+    def __init__(self):
+        self.TICKER = input("What stock ticker would you like to use?: ").upper()  # can use this
+        # self.TICKER = "AAPL".upper()  # or this if you want to test the code
 
-stock_parameters = {
-    "symbol": TICKER,
-    "apikey": API_KEY,
-    "strikeCount": 12,  # I found this value to work most of the time
-    "fromDate": friday,
-    "toDate": friday,  # can change this according to how far out you want the iron condor
-}
+        # from TD Ameritrade
+        self.CONSUMER_KEY = "YOUR OWN CONSUMER KEY"
+        # the consumer key is not used for this API, but can be used for other Ameritrade APIs
+        self.API_KEY = "YOUR OWN API KEY"
+        self.endpoint = "https://api.tdameritrade.com/v1/marketdata/chains"  # the endpoint for this specific program
+        self.my_url = f"{self.endpoint}?apikey={self.API_KEY}&symbol={self.TICKER}"
+        self.TDA_LINK = \
+            f"https://auth.tdameritrade.com/auth?response_type=code&redirect_uri=http://localhost&client_id" \
+            f"={self.API_KEY}%40AMER.OAUTHAP "
 
-# sets up the data set
-response = requests.get(endpoint, params=stock_parameters)
-response.raise_for_status()
-stock_data = response.json()
+        self.stock_parameters = {
+            "symbol": self.TICKER,
+            "apikey": self.API_KEY,
+            "strikeCount": 12,  # I found this value to work most of the time
+            "fromDate": friday,
+            "toDate": friday,  # can change this according to how far out you want the iron condor
+        }
 
+        # sets up the data set
+        self.response = requests.get(self.endpoint, params=self.stock_parameters)
+        self.response.raise_for_status()
+        self.stock_data = self.response.json()
+        self.start()
 
-# this starts the program
-def start():
-    # print(response.text)  # to get the JSON able to be viewed in a JSON viewer
-    get_news()
-    options = Options()
-    options.sentiment()
+    # this starts the program
+    def start(self):
+        # print(response.text)  # to get the JSON able to be viewed in a JSON viewer
+        get_news(self.TICKER)
+        options = Options(self.stock_data, self.stock_parameters, self.TICKER)
+        options.sentiment()
 
 
 # asks the user for news
-def get_news():
+def get_news(TICKER):
     # for the news articles
-    NEWS_API_KEY = "YOUR OWN NEWS API"
+    NEWS_API_KEY = "YOUR OWN NEWS API KEY"
     NEWS_ENDPOINT = "https://newsapi.org/v2/top-headlines"
     news_parameters = {
         "q": TICKER,
@@ -81,14 +86,18 @@ def get_news():
     else:
         pass
 
+
 class Options:
-    def __init__(self):
+    def __init__(self, stock_data, stock_parameters, TICKER):
         self.upper_put_delta = -0.3
         self.lower_put_delta = -0.2
         self.upper_call_delta = 0.3
         self.lower_call_delta = 0.2
         self.gamma_value = 0.1  # I tested this to be accurate
         self.vega_value = 0.2  # I tested this to be accurate
+        self.stock_data = stock_data
+        self.stock_parameters = stock_parameters
+        self.TICKER = TICKER
 
     # this is what gives you the strike based on your sentiment, these are just my values
     def sentiment(self):  # upper means "upper range of risk", lower means the opposite
@@ -96,7 +105,7 @@ class Options:
         sentiment_answer = input("How do you feel about the market? Bullish/Bearish/Neutral/Worried: ").lower()
         if sentiment_answer == "bullish":
             self.upper_put_delta = -0.35
-            self. lower_put_delta = -0.2
+            self.lower_put_delta = -0.2
             self.upper_call_delta = 0.2
             self.lower_call_delta = 0.1
         elif sentiment_answer == "bearish":
@@ -118,20 +127,28 @@ class Options:
             self.vega_value = 0.05
         else:
             pass
-        self.greeks(self.upper_put_delta, self.lower_put_delta, self.upper_call_delta, self.lower_call_delta, self.gamma_value, self.vega_value)
+        try:
+            # check if an options chain exists for the ticker this week
+            tuple(self.stock_data[f"{'call'}ExpDateMap"][f"{friday}:{duf}"].items())[0][1][0]["delta"]
+        except KeyError:
+            self.end(None, None, exist=False)
+        else:
+            self.greeks(self.upper_put_delta, self.lower_put_delta, self.upper_call_delta, self.lower_call_delta,
+                        self.gamma_value, self.vega_value)
 
     # gets the greeks for the iron condor options
     def greeks(self, upper_put_delta, lower_put_delta, upper_call_delta, lower_call_delta, gamma_value, vega_value):
         put_strike = None
         call_strike = None
-        for _ in range(0, stock_parameters["strikeCount"]):
-            # print("the _ is: " + str(_))
+        for _ in range(0, self.stock_parameters["strikeCount"]):
             option_types = ["call", "put"]
             for option_type in option_types:  # don't use theta for the weekly income model, but it can be incorporated
-                delta = tuple(stock_data[f"{option_type}ExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["delta"]
-                gamma = tuple(stock_data[f"{option_type}ExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["gamma"]
-                # theta = tuple(stock_data[f"{option_type}ExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["theta"]
-                vega = tuple(stock_data[f"{option_type}ExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["vega"]
+                delta = tuple(self.stock_data[f"{option_type}ExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["delta"]
+                if type(delta) == str:  # sometimes when Friday is too close, delta is NaN
+                    delta = float(0)
+                gamma = tuple(self.stock_data[f"{option_type}ExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["gamma"]
+                # theta = tuple(self.stock_data[f"{option_type}ExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["theta"]
+                vega = tuple(self.stock_data[f"{option_type}ExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["vega"]
                 if option_type == "put":
                     if self.get_short_put(upper_put_delta, lower_put_delta, delta, _) != 0 and \
                             gamma < gamma_value and vega < vega_value:
@@ -144,44 +161,47 @@ class Options:
                         call_strike = self.get_short_call(upper_call_delta, lower_call_delta, delta, _)
                     else:
                         pass
-        if put_strike and call_strike:  # add the call_strike here
-            print(f"\nThe strike price for the short put is: {put_strike}")
-            print(f"The strike price for the short call is: {call_strike}")
-        else:
-            print(f"\nNot recommended to execute an iron condor for {TICKER} expiring on {friday}.")
-
+        self.end(put_strike, call_strike, exist=True)
 
     # gets the short put strike price
     def get_short_put(self, upper_put_delta, lower_put_delta, delta, _):
         if upper_put_delta < delta < lower_put_delta:
-            strike = tuple(stock_data["putExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["strikePrice"]
+            strike = tuple(self.stock_data["putExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["strikePrice"]
         else:
             strike = 0
         return strike
-
 
     # gets the short call strike price
     def get_short_call(self, upper_call_delta, lower_call_delta, delta, _):
         if upper_call_delta > delta > lower_call_delta:
-            strike = tuple(stock_data["callExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["strikePrice"]
+            strike = tuple(self.stock_data["callExpDateMap"][f"{friday}:{duf}"].items())[_][1][0]["strikePrice"]
         else:
             strike = 0
         return strike
 
+    def end(self, put_strike, call_strike, exist):
+        if put_strike and call_strike and exist:
+            print(f"\nThe strike price for the {self.TICKER} short put is: {put_strike}.")
+            print(f"The strike price for the {self.TICKER} short call is: {call_strike}.")
+        else:
+            if exist:
+                print(f"\nIt is not recommended to execute an iron condor for {self.TICKER} expiring on {friday}.")
+            else:
+                print(f"\n{self.TICKER} does not have options for {friday}.")
+        answer = input("Do you want to test another ticker? Yes/No: ")
+        if answer.lower() == "yes":
+            SetUp()
+        else:
+            print("Have a productive day!")
+
 
 # starts the main portion of the program
-start()
-
-
+SetUp()
 
 # Options Greeks:
-        # the rate of change between
-    # Delta: ... the option's price and a $1 change in the underlying stock price
-    # Theta: ... the option price and time
-    # Gamma: ... an option's delta and the underlying asset's price
-    # Vega: ... an option's value and the underlying asset's implied volatility
-    # Rho: ... an option's value and a 1% change in the interest rate
-
-
-
-
+# the rate of change between
+# Delta: ... the option's price and a $1 change in the underlying stock price
+# Theta: ... the option price and time
+# Gamma: ... an option's delta and the underlying asset's price
+# Vega: ... an option's value and the underlying asset's implied volatility
+# Rho: ... an option's value and a 1% change in the interest rate
