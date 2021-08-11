@@ -17,6 +17,33 @@ else:
 friday = str(friday_date).split()[0]
 
 
+# asks the user for news
+def get_news(TICKER):
+    # for the news articles
+    NEWS_API_KEY = "YOUR OWN NEWS API KEY"
+    NEWS_ENDPOINT = "https://newsapi.org/v2/top-headlines"
+    news_parameters = {
+        "q": TICKER,
+        "apiKey": NEWS_API_KEY,
+    }
+
+    # the following will give you the recent news on your selected ticker
+    # helps form your opinion on how the market is doing
+    news_response = requests.get(NEWS_ENDPOINT, params=news_parameters)
+    news_response.raise_for_status()
+    news_data = news_response.json()
+
+    message = ""
+    if news_data["totalResults"] == 0:
+        message += f"There are no articles for {TICKER}."
+    else:
+        news_answer = input(f"Do you want news for {TICKER}? yes/no: ").lower()
+        if news_answer == "yes":
+            for _ in range(min(news_data["totalResults"], 3)):  # will print a maximum of 3 news articles
+                message += f"{_ + 1}. {str(news_data['articles'][_]['description'])}" + "\n"
+        print(message)  # prints the article(s)
+   
+
 class SetUp:
     def __init__(self):
         self.TICKER = input("What stock ticker would you like to use?: ").upper()  # can use this
@@ -54,40 +81,8 @@ class SetUp:
         options.sentiment()
 
 
-# asks the user for news
-def get_news(TICKER):
-    # for the news articles
-    NEWS_API_KEY = "YOUR OWN NEWS API KEY"
-    NEWS_ENDPOINT = "https://newsapi.org/v2/top-headlines"
-    news_parameters = {
-        "q": TICKER,
-        "apiKey": NEWS_API_KEY,
-    }
-
-    # the following will give you the recent news on your selected ticker
-    # helps form your opinion on how the market is doing
-    news_response = requests.get(NEWS_ENDPOINT, params=news_parameters)
-    news_response.raise_for_status()
-    news_data = news_response.json()
-
-    news_answer = input(f"Do you want news for {TICKER}? yes/no: ").lower()
-    if news_answer == "yes":
-        message = ""
-        for _ in range(0, 3):
-            if news_data["totalResults"] > _:
-                message += str(news_data["articles"][_]["description"]) + "\n"
-            elif news_data["totalResults"] == 0:
-                message += f"There are no articles for {TICKER}."
-                break
-            else:
-                message = None
-        if message:
-            print(message)
-    else:
-        pass
-
-
 class Options:
+    # initializes the Options Class with the standard values for the greeks
     def __init__(self, stock_data, stock_parameters, TICKER):
         self.upper_put_delta = -0.3
         self.lower_put_delta = -0.2
@@ -101,7 +96,6 @@ class Options:
 
     # this is what gives you the strike based on your sentiment, these are just my values
     def sentiment(self):  # upper means "upper range of risk", lower means the opposite
-
         sentiment_answer = input("How do you feel about the market? Bullish/Bearish/Neutral/Worried: ").lower()
         if sentiment_answer == "bullish":
             self.upper_put_delta = -0.35
