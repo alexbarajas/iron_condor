@@ -131,8 +131,10 @@ class Options:
             # check if an options chain exists for the ticker this week
             tuple(self.stock_data[f"{'call'}ExpDateMap"][f"{friday}:{duf}"].items())[0][1][0]["delta"]
         except KeyError:
+            # will occur if there was a KeyError, which happens when there are no options for this ticker for this week
             self.end(None, None, exist=False)
         else:
+            # if an options chain exists for the ticker then the program will continue
             self.greeks(self.upper_put_delta, self.lower_put_delta, self.upper_call_delta, self.lower_call_delta,
                         self.gamma_value, self.vega_value)
 
