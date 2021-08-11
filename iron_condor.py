@@ -179,8 +179,8 @@ class Options:
                 print(f"\nIt is not recommended to execute an iron condor for {self.TICKER} expiring on {friday}.")
             else:
                 print(f"\n{self.TICKER} does not have options for {friday}.")
-        answer = input("Do you want to test another ticker? Yes/No: ")
-        if answer.lower() == "yes":
+        answer = input("Do you want to test another ticker? Yes/No: ").lower()
+        if answer == "yes":
             SetUp()
         else:
             print("Have a productive day!")
