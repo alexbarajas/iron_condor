@@ -84,6 +84,7 @@ class SetUp:
 class Options:
     # initializes the Options Class with the standard values for the greeks
     def __init__(self, stock_data, stock_parameters, TICKER):
+        # values recommended to be used if you are new to iron condors
         self.upper_put_delta = -0.3
         self.lower_put_delta = -0.2
         self.upper_call_delta = 0.3
@@ -96,30 +97,24 @@ class Options:
 
     # this is what gives you the strike based on your sentiment, these are just my values
     def sentiment(self):  # upper means "upper range of risk", lower means the opposite
+        mood = {  # gives a tuple depending on how the user is feeling
+            "bullish": (-0.35, -0.20, 0.20, 0.10, 0.10, 0.20),  # hopeful of a stock rising in value
+            "bearish": (-0.20, -0.10, 0.30, 0.20, 0.10, 0.20),  # hopeful of a stock decreasing in value
+            "neutral": (-0.25, -0.15, 0.25, 0.15, 0.10, 0.20),  # slightly bullish for me
+            "worried": (-0.15, -0.10, 0.15, 0.10, 0.08, 0.05),  # unlikely to be risky
+        }
         sentiment_answer = input("How do you feel about the market? Bullish/Bearish/Neutral/Worried: ").lower()
-        if sentiment_answer == "bullish":
-            self.upper_put_delta = -0.35
-            self.lower_put_delta = -0.2
-            self.upper_call_delta = 0.2
-            self.lower_call_delta = 0.1
-        elif sentiment_answer == "bearish":
-            self.upper_put_delta = -0.2
-            self.lower_put_delta = -0.1
-            self.upper_call_delta = 0.3
-            self.lower_call_delta = 0.2
-        elif sentiment_answer == "neutral":
-            self.upper_put_delta = -0.25
-            self.lower_put_delta = -0.15
-            self.upper_call_delta = 0.25
-            self.lower_call_delta = 0.15
-        elif sentiment_answer == "worried":
-            self.upper_put_delta = -0.15
-            self.lower_put_delta = -0.1
-            self.upper_call_delta = 0.15
-            self.lower_call_delta = 0.1
-            self.gamma_value = 0.08
-            self.vega_value = 0.05
-        else:
+        try:
+            # tries to see if that input is in the hashmap
+            if mood[sentiment_answer]:
+                self.upper_put_delta = mood[sentiment_answer][0]
+                self.lower_put_delta = mood[sentiment_answer][1]
+                self.upper_call_delta = mood[sentiment_answer][2]
+                self.lower_call_delta = mood[sentiment_answer][3]
+                self.gamma_value = mood[sentiment_answer][4]
+                self.vega_value = mood[sentiment_answer][5]
+        except KeyError:
+            # if there is a KeyError than the default values for the greeks are used
             pass
         try:
             # check if an options chain exists for the ticker this week
