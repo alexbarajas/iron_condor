@@ -75,7 +75,7 @@ class SetUp:
 
     # this starts the program
     def start(self):
-        # print(response.text)  # to get the JSON able to be viewed in a JSON viewer
+        # print(self.response.text)  # to get the JSON able to be viewed in a JSON viewer
         get_news(self.TICKER)
         options = Options(self.stock_data, self.stock_parameters, self.TICKER)
         options.sentiment()
